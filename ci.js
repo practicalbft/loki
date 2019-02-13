@@ -50,14 +50,14 @@ ci = {
         // run bootstrap scripts if existing
         if (lokiConf.bootstrap) {
             cmd = `cd ${dir}`
-            lokiConf.bootstrap.forEach(c => cmd += `&& ${c}`)
+            lokiConf.bootstrap.forEach(c => cmd += ` && ${c}`)
             exec(cmd)
         }
 
         // run check scripts
         try {
             cmd = `cd ${dir}`
-            lokiConf.cmd.forEach(c => cmd += `&& ${c}`)
+            lokiConf.cmd.forEach(c => cmd += ` && ${c}`)
             exec(cmd)
             return 0
         } catch(err) {

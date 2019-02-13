@@ -27,7 +27,7 @@ cmd:
 ```
 git clone https://github.com/practicalbft/loki.git && cd loki
 yarn
-cp .env.example .env
+mv .env.example .env
 # edit .env with appropriate details
 yarn start
 ```
