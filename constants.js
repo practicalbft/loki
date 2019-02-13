@@ -10,7 +10,14 @@ const CONSTANTS = {
         'unlabeled',
         'closed',
         'reopened'
-    ]
+    ],
+    GH_STATES: {
+        PENDING: 'pending',
+        FAILURE: 'failure',
+        SUCCESS: 'success'
+    },
+    GH_CONTEXT: 'continuous-integration/loki',
+    GH_API_BASE_URL: 'https://api.github.com'
 }
 
 module.exports = CONSTANTS

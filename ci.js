@@ -2,22 +2,25 @@ const exec = require('child_process').execSync
 const yaml = require('js-yaml')
 const fs = require('fs')
 
-const { REPO_BASE_PATH, LOKI_CONF_FILE } = require('./constants')
+const gh = require('./gh')
+const { REPO_BASE_PATH, LOKI_CONF_FILE, GH_STATES } = require('./constants')
 
 ci = {
     runChecks: async repoData => {
+        await gh.postState(GH_STATES.PENDING, repoData.repo, repoData.ref)
         lokiConfPath = await ci.checkOutRepo(repoData)
 
         try {
             testResult = await ci.runTests(lokiConfPath, repoData)
+            await gh.postState(GH_STATES.SUCCESS, repoData.repo, repoData.ref)
             return 0
         } catch (err) {
             console.log(err)
-            throw Error(`Tests failed. Error: ${err.stderr.toString('utf8')}`)
+            await gh.postState(GH_STATES.FAILURE, repoData.repo, repoData.ref)
+            throw Error('Checks failed.')
         }
     },
     checkOutRepo: async ({ gitUrl, repo, ref }) => {
-        // clone repo, check out correct commit and return path?
         try {
             // clone repo and move into 
             path = `${REPO_BASE_PATH}/${repo}`
@@ -40,19 +43,18 @@ ci = {
         }
     },
     runTests: async (lokiConfPath, { repo }) => {
-        // const testFile = process.env.TEST_SCRIPT
-        // if (!testFile) throw Error("Test file not specified")
-
         // parse loki file
         const lokiConf = yaml.safeLoad(fs.readFileSync(lokiConfPath, 'utf8'))
         dir = `${REPO_BASE_PATH}/${repo}/${lokiConf.dir}`
 
+        // run bootstrap scripts if existing
         if (lokiConf.bootstrap) {
             cmd = `cd ${dir}`
             lokiConf.bootstrap.forEach(c => cmd += `&& ${c}`)
             exec(cmd)
         }
 
+        // run check scripts
         try {
             cmd = `cd ${dir}`
             lokiConf.cmd.forEach(c => cmd += `&& ${c}`)
