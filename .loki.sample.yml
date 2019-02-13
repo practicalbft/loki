@@ -1,0 +1,10 @@
+# sample .loki conf file
+
+# where to run the specified command
+dir: .
+# commands to run when cloning the repo
+bootstrap:
+  - chmod +x test_script.sh
+# cmd to actually run the checks
+cmd:
+  - source ./bin/env/activate && ./scripts/test

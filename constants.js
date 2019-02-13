@@ -1,5 +1,6 @@
 const CONSTANTS = {
-    DEF_REPO_PATH: './repo',
+    REPO_BASE_PATH: './tmp',
+    LOKI_CONF_FILE: '.loki.yml',
     INVALID_EVENTS: [
         'assigned',
         'unassigned',
