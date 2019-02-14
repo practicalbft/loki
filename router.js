@@ -12,17 +12,14 @@ router.get('/', (req, res) => {
 
 // webhook endpoint
 router.post('/hook', (request, response) => {
-    const { headers, payload } = request.body
-
     // respond to GitHub webhook pings
-    if (headers[GH_PING_EVENT] && headers[GH_PING_EVENT] === 'ping') {
+    if (request.headers[GH_PING_EVENT] && request.headers[GH_PING_EVENT] === 'ping') {
         return response.sendStatus(200)
     }
 
-    const { action } = payload
-
+    const { payload } = request.body
     // don't do anything on these events
-    if (INVALID_EVENTS.includes(action)) response.sendStatus(405)
+    if (INVALID_EVENTS.includes(payload.action)) response.sendStatus(405)
 
     const ref = payload.pull_request.head.sha
     const title = payload.pull_request.title

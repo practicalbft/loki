@@ -18,7 +18,7 @@ const CONSTANTS = {
     },
     GH_CONTEXT: 'continuous-integration/loki',
     GH_API_BASE_URL: 'https://api.github.com',
-    GH_PING_EVENT: 'ping'
+    GH_PING_EVENT: 'x-github-event'
 }
 
 module.exports = CONSTANTS
