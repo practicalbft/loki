@@ -3,7 +3,7 @@ const router = express.Router()
 
 const api = require('./gh')
 const ci = require('./ci')
-const { INVALID_EVENTS } = require('./constants')
+const { INVALID_EVENTS, GH_PING_EVENT } = require('./constants')
 
 // health endpoint
 router.get('/', (req, res) => {
@@ -12,8 +12,13 @@ router.get('/', (req, res) => {
 
 // webhook endpoint
 router.post('/hook', (request, response) => {
-    const payload = request.body
+    const { headers, payload } = request.body
     const { action } = payload
+
+    // respond to GitHub webhook pings
+    if (headers[GH_PING_EVENT] && headers[GH_PING_EVENT] === 'ping') {
+        return response.sendStatus(200)
+    }
 
     // don't do anything on these events
     if (INVALID_EVENTS.includes(action)) response.sendStatus(405)
