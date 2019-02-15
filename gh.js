@@ -17,7 +17,8 @@ const gh = {
         payload = {
             state,
             context: GH_CONTEXT,
-            description: gh.descForState(state)
+            description: gh.descForState(state),
+            target_url: `https://loki.axelniklasson.se/jobs/${ref}`
         }
 
         const url = `${GH_API_BASE_URL}/repos/${repo}/statuses/${ref}`

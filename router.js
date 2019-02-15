@@ -1,13 +1,14 @@
 const express = require('express')
 const router = express.Router()
+const fs = require('fs')
 
-const api = require('./gh')
+const gh = require('./gh')
 const ci = require('./ci')
-const { INVALID_EVENTS, GH_PING_EVENT } = require('./constants')
+const { INVALID_EVENTS, GH_PING_EVENT, GH_STATES } = require('./constants')
 
 // health endpoint
-router.get('/', (req, res) => {
-    res.sendStatus(200)
+router.get('/', (request, response) => {
+    response.sendStatus(200)
 })
 
 // webhook endpoint
@@ -17,7 +18,8 @@ router.post('/hook', (request, response) => {
         return response.sendStatus(200)
     }
 
-    const { payload } = request.body
+    const payload = request.body
+
     // don't do anything on these events
     if (INVALID_EVENTS.includes(payload.action)) response.sendStatus(405)
 
@@ -26,17 +28,35 @@ router.post('/hook', (request, response) => {
     const repo = payload.repository.full_name
     const gitUrl = payload.pull_request.head.repo.clone_url
 
-    console.log(`Running tests for PR ${title} with commit ref ${ref}`)
+    console.log(`Running checks for PR ${title} with commit ref ${ref}`)
 
     ci.runChecks({ gitUrl, repo, ref })
-        .then(exitCode => {
-            console.log(`All checks passed.`)
+        .then(async exitCode => {
+            console.log(`All checks passed with exit code ${exitCode}.`)
+            await gh.postState(GH_STATES.SUCCESS, repo, ref)
             response.sendStatus(200)
         })
-        .catch(msg => {
+        .catch(async msg => {
             console.log(`Checks failed with error message: ${msg}`)
-            response.sendStatus(500)
+            await gh.postState(GH_STATES.FAILURE, repo, ref)
+            response.sendStatus(406)
         })
+})
+
+router.get('/jobs/:ref', (request, response) => {
+    const { ref } = request.params
+    const path = `./tmp/logs/${ref}.log`
+
+    if (!fs.existsSync(path)) {
+        return response.sendStatus(404)
+    }
+
+    // send raw log back to client
+    const contents = fs.readFileSync(path, 'utf8')
+    response.setHeader('Content-type', 'text/plain')
+    response.charset = 'UTF-8'
+    response.write(contents)
+    response.end()
 })
 
 module.exports = router

@@ -6,30 +6,42 @@ const gh = require('./gh')
 const { REPO_BASE_PATH, LOKI_CONF_FILE, GH_STATES } = require('./constants')
 
 ci = {
+    ref: null,
+    logFile: null,
+    runCommand: cmd => {
+        const fd = fs.openSync(`./tmp/logs/${ci.ref}.log`, 'a')
+        exec(cmd, { stdio: [0, fd, fd] })
+        fs.closeSync(fd)
+    },
     runChecks: async repoData => {
+        ci.ref = repoData.ref
+        ci.logFile = fs.openSync(`./tmp/logs/${ci.ref}.log`, 'a')
+
         await gh.postState(GH_STATES.PENDING, repoData.repo, repoData.ref)
+
+        const logsDir = './tmp/logs'
+        if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir)
+
+        const logFilePath = `${logsDir}/${repoData.ref}.log`
+        if (fs.existsSync(logFilePath)) fs.unlinkSync(logFilePath)
+
         lokiConfPath = await ci.checkOutRepo(repoData)
 
         try {
-            testResult = await ci.runTests(lokiConfPath, repoData)
-            await gh.postState(GH_STATES.SUCCESS, repoData.repo, repoData.ref)
-            return 0
+            return await ci.runTests(lokiConfPath, repoData)
         } catch (err) {
             console.log(err)
-            await gh.postState(GH_STATES.FAILURE, repoData.repo, repoData.ref)
-            throw Error('Checks failed.')
+            throw Error(`Checks failed. Error: ${err}`)
         }
     },
     checkOutRepo: async ({ gitUrl, repo, ref }) => {
         try {
             // clone repo and move into 
             path = `${REPO_BASE_PATH}/${repo}`
-            if (fs.existsSync(path)) {
-                exec(`rm -r ${path}`)
-            }
-            exec(`git clone ${gitUrl} ${path}`)
-            exec(`cd ${path} && git checkout ${ref}`)
-
+            if (fs.existsSync(path)) ci.runCommand(`rm -rf ${path}`)
+            
+            ci.runCommand(`git clone ${gitUrl} ${path}`)
+            ci.runCommand(`cd ${path} && git checkout ${ref}`)
 
             // check for loki configuration file
             const lokiConfPath = `${path}/${LOKI_CONF_FILE}`
@@ -51,18 +63,18 @@ ci = {
         if (lokiConf.bootstrap) {
             cmd = `cd ${dir}`
             lokiConf.bootstrap.forEach(c => cmd += ` && ${c}`)
-            exec(cmd)
+            ci.runCommand(cmd)
         }
 
         // run check scripts
         try {
             cmd = `cd ${dir}`
             lokiConf.cmd.forEach(c => cmd += ` && ${c}`)
-            exec(cmd)
+            ci.runCommand(cmd)
             return 0
         } catch(err) {
             console.log(err)
-            throw(`Tests failed. Error: ${err.stderr.toString('utf8')}`)
+            throw Error(`Tests failed. Error: ${err}`)
         }
     }
 }
