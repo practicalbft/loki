@@ -25,7 +25,7 @@ cmd:
 
 ## Running Loki locally
 ```
-git clone https://github.com/practicalbft/loki.git && cd loki
+git clone https://github.com/sspbft/loki.git && cd loki
 yarn
 mv .env.example .env
 # edit .env with appropriate details
