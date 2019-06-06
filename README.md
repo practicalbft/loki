@@ -20,9 +20,6 @@ cmd:
     - ./scripts/test
 ```
 
-### Configuring webhook
-// TODO
-
 ## Running Loki locally
 ```
 git clone https://github.com/sspbft/loki.git && cd loki
